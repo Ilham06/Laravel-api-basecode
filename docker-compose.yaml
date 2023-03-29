@@ -1,0 +1,48 @@
+version: "3.9"
+services:
+    nginx:
+        container_name: nginx
+        image: "nginx:1.23.1-alpine"
+        restart: always
+        depends_on:
+            - phppm
+        volumes:
+            - ".:/code"
+            - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+        ports:
+            - "8080:80"
+
+    fpm:
+        container_name: fpm
+        build:
+            dockerfile: ./docker/php-fpm/Dockerfile
+            target: local
+        restart: always
+        depends_on:
+            - db-laravel
+        working_dir: /code
+        volumes:
+            - ".:/code"
+            - "./docker/php-fpm/php-overrides.ini:/usr/local/etc/php/conf.d/php-overrides.ini"
+
+    db-laravel:
+        container_name: mysql
+        image: "mysql:8.0"
+        restart: always
+        command: mysqld --default-authentication-plugin=mysql_native_password
+        volumes:
+            - "dblaravel:/var/lib/mysql"
+            - "dblaravellog:/var/log/mysql"
+            - "./docker/mysql/conf:/etc/mysql/conf.d"
+        environment:
+            - MYSQL_USER=${DB_USERNAME:-myuser}
+            - MYSQL_PASSWORD=${DB_PASSWORD:-password}
+            - MYSQL_DATABASE=${DB_DATABASE:-my_db}
+            - MYSQL_ROOT_PASSWORD=password
+        ports:
+            - 6033:3306
+volumes:
+    dblaravel:
+    dblaravellog:
+
+
